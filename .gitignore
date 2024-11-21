@@ -1,0 +1,52 @@
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environment
+venv/
+env/
+
+# Distribution files
+build/
+dist/
+*.egg-info/
+*.eggs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Test coverage and reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Secrets and configurations
+*.env
+.env.*
+
+# Docker and container files
+*.pid
+docker-compose.override.yml
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
