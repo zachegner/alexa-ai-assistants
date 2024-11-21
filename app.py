@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 def get_chatgpt_response(user_input):
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
