@@ -3,25 +3,17 @@ import os
 from flask import Flask, request, jsonify
 import logging
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 client = OpenAI()
-
-# Set up OpenAI API key
 client.api_key = os.getenv('OPENAI_API_KEY')
-
 app = Flask(__name__)
 
-def get_chatgpt_response(user_input):
+def get_chatgpt_response(conversation_history):
     try:
         completion = client.chat.completions.create(
-            model="gpt-4",  # Ensure this model is available in your OpenAI account
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": user_input}
-            ],
+            model="gpt-4",
+            messages=conversation_history,
             max_tokens=150,
             temperature=0.7
         )
@@ -35,12 +27,14 @@ def get_chatgpt_response(user_input):
 def alexa_webhook():
     data = request.get_json()
     logger.info(f"Received request: {data}")
-
     if not data:
         return jsonify({'status': 'failure', 'message': 'No data received'}), 400
 
-    request_type = data.get('request', {}).get('type')
+    session_attributes = data.get('session', {}).get('attributes', {})
+    if 'history' not in session_attributes:
+        session_attributes['history'] = [{"role": "system", "content": "You are a helpful assistant, keep the response short."}]
 
+    request_type = data.get('request', {}).get('type')
     if request_type == 'LaunchRequest':
         response = {
             'version': '1.0',
@@ -50,7 +44,8 @@ def alexa_webhook():
                     'text': 'Welcome to Egner AI Assistant. How can I help you today?'
                 },
                 'shouldEndSession': False
-            }
+            },
+            'sessionAttributes': session_attributes
         }
         return jsonify(response)
 
@@ -61,7 +56,17 @@ def alexa_webhook():
         if intent_name == 'ChatGPTIntent':
             user_query = data['request']['intent']['slots']['Query']['value']
             logger.info(f"User Query: {user_query}")
-            chatgpt_response = get_chatgpt_response(user_query)
+
+            # Add the user query to the conversation history
+            history = session_attributes.get('history', [])
+            history.append({"role": "user", "content": user_query})
+
+            # Get the response from ChatGPT
+            chatgpt_response = get_chatgpt_response(history)
+
+            # Add ChatGPT's response to the conversation history
+            history.append({"role": "assistant", "content": chatgpt_response})
+            session_attributes['history'] = history
 
             response = {
                 'version': '1.0',
@@ -71,7 +76,8 @@ def alexa_webhook():
                         'text': chatgpt_response
                     },
                     'shouldEndSession': False
-                }
+                },
+                'sessionAttributes': session_attributes
             }
             return jsonify(response)
 
@@ -84,7 +90,8 @@ def alexa_webhook():
                         'text': "I'm sorry, I didn't get that. Can you repeat?"
                     },
                     'shouldEndSession': False
-                }
+                },
+                'sessionAttributes': session_attributes
             }
             return jsonify(response)
 
