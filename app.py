@@ -1,9 +1,6 @@
 from openai import OpenAI
-import base64
 import os
-from flask import Flask, request, jsonify, send_file
-import pychromecast
-import time
+from flask import Flask, request, jsonify
 import logging
 
 # Set up logging
@@ -18,81 +15,91 @@ client.api_key = os.getenv('OPENAI_API_KEY')
 app = Flask(__name__)
 
 def get_chatgpt_response(user_input):
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": user_input
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4",  # Ensure this model is available in your OpenAI account
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_input}
+            ],
+            max_tokens=150,
+            temperature=0.7
+        )
+        response_text = completion.choices[0].message.content
+        return response_text
+    except Exception as e:
+        logger.error(f"Error communicating with OpenAI: {e}")
+        return "I'm sorry, I couldn't process that request."
+
+@app.route('/alexa', methods=['POST'])
+def alexa_webhook():
+    data = request.get_json()
+    logger.info(f"Received request: {data}")
+
+    if not data:
+        return jsonify({'status': 'failure', 'message': 'No data received'}), 400
+
+    request_type = data.get('request', {}).get('type')
+
+    if request_type == 'LaunchRequest':
+        response = {
+            'version': '1.0',
+            'response': {
+                'outputSpeech': {
+                    'type': 'PlainText',
+                    'text': 'Welcome to Egner AI Assistant. How can I help you today?'
+                },
+                'shouldEndSession': False
             }
-        ],
-        modalities=["text", "audio"],
-        audio={"voice": "alloy", "format": "wav"}
-    )
-    
-    # Extract the text response
-    assistant_response_text = completion.choices[0].message.content
-    
-    # Extract and decode the audio data
-    audio_data_base64 = completion.choices[0].message.audio.data
-    audio_bytes = base64.b64decode(audio_data_base64)
-    
-    # Save the audio response to a file
-    audio_filename = 'static/response.wav'
-    with open(audio_filename, 'wb') as f:
-        f.write(audio_bytes)
-    
-    return assistant_response_text, audio_filename
+        }
+        return jsonify(response)
 
-def play_audio_on_google_home(audio_filename):
-    chromecasts, browser = pychromecast.get_listed_chromecasts(friendly_names=["Your Google Home Mini Name"])
-    if not chromecasts:
-        logger.error("No Chromecast devices found")
-        return
-    cast = chromecasts[0]
-    cast.wait()
+    elif request_type == 'IntentRequest':
+        intent_name = data['request']['intent']['name']
+        logger.info(f"Intent: {intent_name}")
 
-    mc = cast.media_controller
-    media_url = f'http://your_server_ip:5000/get_audio?filename={audio_filename}'
-    mc.play_media(media_url, 'audio/wav')
-    mc.block_until_active()
+        if intent_name == 'ChatGPTIntent':
+            user_query = data['request']['intent']['slots']['Query']['value']
+            logger.info(f"User Query: {user_query}")
+            chatgpt_response = get_chatgpt_response(user_query)
 
-    while mc.status.player_state == 'PLAYING':
-        time.sleep(0.1)
+            response = {
+                'version': '1.0',
+                'response': {
+                    'outputSpeech': {
+                        'type': 'PlainText',
+                        'text': chatgpt_response
+                    },
+                    'shouldEndSession': False
+                }
+            }
+            return jsonify(response)
 
-    pychromecast.discovery.stop_discovery(browser)
+        else:
+            response = {
+                'version': '1.0',
+                'response': {
+                    'outputSpeech': {
+                        'type': 'PlainText',
+                        'text': "I'm sorry, I didn't get that. Can you repeat?"
+                    },
+                    'shouldEndSession': False
+                }
+            }
+            return jsonify(response)
 
-@app.route('/process', methods=['POST'])
-def process_request():
-    data = request.json
-    user_input = data.get('query')
-    if not user_input:
-        return jsonify({'status': 'error', 'message': 'No query provided'}), 400
-
-    try:
-        # Get responses from ChatGPT
-        response_text, audio_filename = get_chatgpt_response(user_input)
-        logger.info(f"ChatGPT Response: {response_text}")
-    except Exception as e:
-        logger.error(f"Error with OpenAI API: {e}")
-        return jsonify({'status': 'error', 'message': 'OpenAI API Error'}), 500
-
-    try:
-        # Play audio on Google Home Mini
-        play_audio_on_google_home(audio_filename)
-    except Exception as e:
-        logger.error(f"Error playing audio on Google Home: {e}")
-        return jsonify({'status': 'error', 'message': 'Playback Error'}), 500
-
-    return jsonify({'status': 'success'}), 200
-
-@app.route('/get_audio')
-def get_audio():
-    audio_filename = request.args.get('filename', default='static/response.wav', type=str)
-    if os.path.exists(audio_filename):
-        return send_file(audio_filename, mimetype='audio/wav')
     else:
-        return jsonify({'status': 'error', 'message': 'Audio file not found'}), 404
+        response = {
+            'version': '1.0',
+            'response': {
+                'outputSpeech': {
+                    'type': 'PlainText',
+                    'text': "I'm sorry, I can't dooo that."
+                },
+                'shouldEndSession': True
+            }
+        }
+        return jsonify(response)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
