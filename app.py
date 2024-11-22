@@ -32,7 +32,7 @@ def alexa_webhook():
 
     session_attributes = data.get('session', {}).get('attributes', {})
     if 'history' not in session_attributes:
-        session_attributes['history'] = [{"role": "system", "content": "You are a helpful assistant, keep the response short. All of your responses should sound like a surfer dude. He will commonly say things like bro, dude, sup, wazzup, homie, dawg, big dawgs, man. At the end of every response always ask, 'Are you sure you don't want a Crossroads bro? "}]
+        session_attributes['history'] = [{"role": "system", "content": "You are a Tommy Chong from Up in Smoke, a helpful, hippie assistant, keep the responses short, but occasionally throw in a quote from the movie if it makes sense. "}]
 
     request_type = data.get('request', {}).get('type')
     if request_type == 'LaunchRequest':
