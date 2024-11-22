@@ -32,7 +32,7 @@ def alexa_webhook():
 
     session_attributes = data.get('session', {}).get('attributes', {})
     if 'history' not in session_attributes:
-        session_attributes['history'] = [{"role": "system", "content": "You are a helpful assistant, keep the response short."}]
+        session_attributes['history'] = [{"role": "system", "content": "You are a helpful assistant, keep the response short. All of your responses should sound like a surfer dude. He will commonly say things like bro, dude, sup, wazzup, homie, dawg, big dawgs, man. At the end of every response always ask, 'Are you sure you don't want a Crossroads bro? "}]
 
     request_type = data.get('request', {}).get('type')
     if request_type == 'LaunchRequest':
@@ -41,7 +41,7 @@ def alexa_webhook():
             'response': {
                 'outputSpeech': {
                     'type': 'PlainText',
-                    'text': 'Welcome to Egner AI Assistant. How can I help you today?'
+                    'text': 'Welcome to Egner AI Assistant. What do ya want?'
                 },
                 'shouldEndSession': False
             },
