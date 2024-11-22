@@ -1,112 +1,86 @@
-from openai import OpenAI
 import os
 from flask import Flask, request, jsonify
 import logging
+from intents.chatgpt_intent import ChatGPTIntent
+from intents.funny_response_intent import FunnyResponseIntent
+from utils.openai_client import OpenAIClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-client = OpenAI()
-client.api_key = os.getenv('OPENAI_API_KEY')
+
+openai_client = OpenAIClient()
+
 app = Flask(__name__)
 
-def get_chatgpt_response(conversation_history):
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4",
-            messages=conversation_history,
-            max_tokens=150,
-            temperature=0.7
-        )
-        response_text = completion.choices[0].message.content
-        return response_text
-    except Exception as e:
-        logger.error(f"Error communicating with OpenAI: {e}")
-        return "I'm sorry, I couldn't process that request."
+INTENT_HANDLERS = {
+    'ChatGPTIntent': ChatGPTIntent(openai_client.get_response),
+    'FunnyResponseIntent': FunnyResponseIntent(openai_client.get_response),
+}
 
 @app.route('/alexa', methods=['POST'])
 def alexa_webhook():
     data = request.get_json()
     logger.info(f"Received request: {data}")
+
     if not data:
         return jsonify({'status': 'failure', 'message': 'No data received'}), 400
 
     session_attributes = data.get('session', {}).get('attributes', {})
-    if 'history' not in session_attributes:
-        session_attributes['history'] = [{"role": "system", "content": "You are a Tommy Chong from Up in Smoke, a helpful, hippie assistant, keep the responses short, but occasionally throw in a quote from the movie if it makes sense. "}]
-
     request_type = data.get('request', {}).get('type')
+
     if request_type == 'LaunchRequest':
-        response = {
+        session_attributes.setdefault('history', [{"role": "system", "content": "You are a helpful assistant. Keep your responses short."}])
+        return jsonify({
             'version': '1.0',
+            'sessionAttributes': session_attributes,
             'response': {
                 'outputSpeech': {
                     'type': 'PlainText',
-                    'text': 'Welcome to Egner AI Assistant. What do ya want?'
+                    'text': 'Welcome to Egner AI Assistant. How can I assist you today?'
                 },
                 'shouldEndSession': False
-            },
-            'sessionAttributes': session_attributes
-        }
-        return jsonify(response)
+            }
+        })
 
     elif request_type == 'IntentRequest':
         intent_name = data['request']['intent']['name']
-        logger.info(f"Intent: {intent_name}")
+        intent_handler = INTENT_HANDLERS.get(intent_name)
 
-        if intent_name == 'ChatGPTIntent':
-            user_query = data['request']['intent']['slots']['Query']['value']
-            logger.info(f"User Query: {user_query}")
-
-            # Add the user query to the conversation history
-            history = session_attributes.get('history', [])
-            history.append({"role": "user", "content": user_query})
-
-            # Get the response from ChatGPT
-            chatgpt_response = get_chatgpt_response(history)
-
-            # Add ChatGPT's response to the conversation history
-            history.append({"role": "assistant", "content": chatgpt_response})
-            session_attributes['history'] = history
-
-            response = {
+        if intent_handler:
+            response_content = intent_handler.handle(data, session_attributes)
+            return jsonify({
                 'version': '1.0',
+                'sessionAttributes': response_content.get('sessionAttributes', session_attributes),
                 'response': {
-                    'outputSpeech': {
-                        'type': 'PlainText',
-                        'text': chatgpt_response
-                    },
-                    'shouldEndSession': False
-                },
-                'sessionAttributes': session_attributes
-            }
-            return jsonify(response)
+                    'outputSpeech': response_content['outputSpeech'],
+                    'shouldEndSession': response_content['shouldEndSession']
+                }
+            })
 
         else:
-            response = {
+            logger.warning(f"No handler found for intent: {intent_name}")
+            return jsonify({
                 'version': '1.0',
                 'response': {
                     'outputSpeech': {
                         'type': 'PlainText',
-                        'text': "I'm sorry, I didn't get that. Can you repeat?"
+                        'text': "I'm sorry, I didn't understand that intent."
                     },
                     'shouldEndSession': False
-                },
-                'sessionAttributes': session_attributes
-            }
-            return jsonify(response)
+                }
+            })
 
     else:
-        response = {
+        return jsonify({
             'version': '1.0',
             'response': {
                 'outputSpeech': {
                     'type': 'PlainText',
-                    'text': "I'm sorry, I can't dooo that."
+                    'text': "I'm sorry, I can't process that request."
                 },
                 'shouldEndSession': True
             }
-        }
-        return jsonify(response)
+        })
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
