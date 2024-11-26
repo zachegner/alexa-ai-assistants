@@ -16,6 +16,14 @@ class BaseSkill:
         """
         pass
 
+    @abstractmethod
+    def get_welcome_message(self):
+        """
+        Define the welcome message for the skill.
+        Must be implemented by subclasses.
+        """
+        pass
+
     def handle_intent(self, data, session_attributes):
         """
         Handle the incoming intent request.

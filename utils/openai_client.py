@@ -9,7 +9,7 @@ class OpenAIClient:
         self.client = OpenAI()
         self.client.api_key = os.getenv('OPENAI_API_KEY')
     
-    def get_response(self, conversation_history, model="gpt-4o-mini", max_tokens=150, temperature=0.7):
+    def get_response(self, conversation_history, model="gpt-4o-mini", max_tokens=1000, temperature=0.8):
         try:
             logger.info(f"Sending to OpenAI: {conversation_history}")
             completion = self.client.chat.completions.create(

@@ -21,7 +21,6 @@ def get_chatgpt_response(conversation_history):
 def alexa_webhook():
     data = request.get_json()
     logger.info(f"Received request: {data}")
-
     if not data:
         return jsonify({'status': 'failure', 'message': 'No data received'}), 400
 
@@ -58,6 +57,9 @@ def alexa_webhook():
                 "role": "system",
                 "content": skill_handler.get_system_prompt()
             }]
+        
+        # Get the welcome message from the skill
+        welcome_message = skill_handler.get_welcome_message()
 
         response = {
             'version': '1.0',
@@ -65,7 +67,7 @@ def alexa_webhook():
             'response': {
                 'outputSpeech': {
                     'type': 'PlainText',
-                    'text': 'Welcome! How can I assist you today?'
+                    'text': welcome_message  # Dynamic welcome message
                 },
                 'shouldEndSession': False
             }
@@ -75,7 +77,6 @@ def alexa_webhook():
     elif request_type == 'IntentRequest':
         intent_name = data['request']['intent']['name']
         logger.info(f"Intent: {intent_name}")
-
         if intent_name == 'HelpIntent':
             response = {
                 'version': '1.0',
@@ -88,7 +89,6 @@ def alexa_webhook():
                 }
             }
             return jsonify(response)
-
         elif intent_name == 'CancelIntent' or intent_name == 'StopIntent':
             return jsonify({
                 'version': '1.0',
@@ -100,7 +100,6 @@ def alexa_webhook():
                     'shouldEndSession': True
                 }
             })
-
         else:
             # Delegate intent handling to the skill-specific handler
             response_content = skill_handler.handle_intent(data, session_attributes)
@@ -112,7 +111,6 @@ def alexa_webhook():
                     'shouldEndSession': response_content['shouldEndSession']
                 }
             })
-
     else:
         logger.warning(f"Unhandled request type: {request_type}")
         return jsonify({
