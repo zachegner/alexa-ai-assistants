@@ -1,0 +1,29 @@
+{
+  "session": {
+    "new": true,
+    "sessionId": "amzn1.echo-api.session.testSessionId",
+    "application": {
+      "applicationId": "amzn1.ask.skill.fb6b9acf-19bb-49f1-81bd-1510e62bf43a"
+    },
+    "attributes": {},
+    "user": {
+      "userId": "amzn1.ask.account.testUserId"
+    }
+  },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.testRequestId",
+    "intent": {
+      "name": "ChatIntent",
+      "slots": {
+        "Query": {
+          "name": "Query",
+          "value": "Hello, how are you?"
+        }
+      }
+    },
+    "locale": "en-US",
+    "timestamp": "2023-01-01T00:00:00Z"
+  },
+  "version": "1.0"
+}
