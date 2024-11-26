@@ -1,5 +1,8 @@
 # Alexa AI Personal Assistant
 
+![Amazon Alexa](https://img.shields.io/badge/amazon%20alexa-52b5f7?style=for-the-badge&logo=amazon%20alexa&logoColor=white) ![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white) ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white) ![Heroku](https://img.shields.io/badge/heroku-%23430098.svg?style=for-the-badge&logo=heroku&logoColor=white)
+![GitHub repo size](https://img.shields.io/github/repo-size/zachegner/alexa-ai-assistants) ![GitHub language count](https://img.shields.io/github/languages/count/zachegner/alexa-ai-assistants) ![License](https://img.shields.io/github/license/zachegner/alexa-ai-assistants) ![GitHub stars](https://img.shields.io/github/stars/zachegner/alexa-ai-assistants?style=social)
+
 **Have you ever wished Siri or Alexa could truly understand and assist you like a personal assistant?** This project integrates OpenAI's ChatGPT with Amazon Alexa using Python and Flask to create a more intelligent and conversational voice assistant.
 
 ## Features
