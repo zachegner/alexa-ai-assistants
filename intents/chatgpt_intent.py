@@ -6,4 +6,4 @@ class ChatGPTSkill(BaseSkill):
         return "You are a helpful, knowledgeable assistant. Keep responses informative and concise."
 
     def get_welcome_message(self):
-        return "Welcome to the ChatGPT skill! How can I assist you today?"
+        return "Welcome to Eggy Bot! What's up man?"
